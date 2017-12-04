@@ -1,0 +1,3 @@
+docker-entrypoint-initdb.d/*
+!docker-entrypoint-initdb.d/sitemanager.sql
+!docker-entrypoint-initdb.d/collations.sql

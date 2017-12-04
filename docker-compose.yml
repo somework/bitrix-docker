@@ -1,0 +1,100 @@
+version: '2'
+
+services:
+
+### Nginx Server Container ##################################
+
+    nginx:
+        image: bx-nginx:latest
+        build: ./nginx
+        volumes_from:
+            - volumes_source
+        volumes:
+            - ./logs/nginx/:/var/log/nginx
+            - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./nginx/bx.conf:/etc/nginx/sites-available/bx.conf
+        ports:
+            - "280:80"
+        links:
+            - php-fpm
+        env_file: .env
+
+### PHP-FPM Container #######################################
+
+    php-fpm:
+        image: bx-php-fpm:latest
+        build:
+            context: ./php-fpm
+            dockerfile: Dockerfile-70
+        volumes_from:
+            - volumes_source
+        expose:
+            - "9000"
+        links:
+            - workspace
+        env_file: .env
+
+### MySQL Container #########################################
+
+    mysql:
+        image: bx-mysql:latest
+        build: ./mysql
+        volumes_from:
+            - volumes_data
+        ports:
+            - "33062:3306"
+        env_file: .env
+        #environment:
+        #    MYSQL_DATABASE: sitemanager
+        #    MYSQL_USER: bitrix
+        #    MYSQL_PASSWORD: bitrix
+        #    MYSQL_ROOT_PASSWORD: root
+
+
+### Memcached Container #####################################
+
+    memcached:
+        image: bx-memcached:latest
+        build: ./memcached
+        volumes_from:
+            - volumes_data
+        ports:
+            - "11213:11211"
+        links:
+            - php-fpm
+
+
+
+### Workspace Utilities Container ###########################
+
+    workspace:
+        image: bx-workspace:latest
+        build:
+            context: ./workspace
+        ports:
+            - "40022:22"
+        volumes_from:
+            - volumes_source
+        env_file: .env
+        tty: true
+
+### Application Code Container ######################
+
+    volumes_source:
+        image: bx-volume-sources:latest
+        build: ./volumes/application
+        volumes:
+            - ./project:/var/www/site
+
+
+
+### Databases Data Container ################################
+
+    volumes_data:
+        image: bx-volume-data:latest
+        build: ./volumes/data
+        volumes:
+            - ./db/mysql:/var/lib/mysql
+            - ./db/memcached:/var/lib/memcached
+
+
